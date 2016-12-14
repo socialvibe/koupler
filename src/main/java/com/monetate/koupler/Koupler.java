@@ -30,8 +30,18 @@ public abstract class Koupler implements Runnable {
     public KinesisEventProducer producer;
     private ExecutorService threadPool;
 
+    protected static String format = "split";
+    protected static CommandLine cmd;
+    protected static String propertiesFile = "./conf/kpl.properties";
+    protected static int queueSize = 50000;
+    protected static String appName = "koupler";
+
     public Koupler(KinesisEventProducer producer, int threadPoolSize) {
         this.producer = producer;
+        this.threadPool = Executors.newFixedThreadPool(threadPoolSize);
+    }
+
+    public Koupler(int threadPoolSize) {
         this.threadPool = Executors.newFixedThreadPool(threadPoolSize);
     }
 
@@ -103,7 +113,6 @@ public abstract class Koupler implements Runnable {
         boolean misconfigured = false;
         Options options = new Options();
 
-        String propertiesFile = "./conf/kpl.properties";
         options.addOption("propertiesFile", true, "kpl properties file (default: " + propertiesFile + ")");
 
         int port = 4242;
@@ -125,7 +134,7 @@ public abstract class Koupler implements Runnable {
         options.addOption("queueSize", true, "event buffer/queue size (default: 50000)");
 
         CommandLineParser parser = new DefaultParser();
-        CommandLine cmd = parser.parse(options, args);
+        cmd = parser.parse(options, args);
 
         if (cmd.hasOption("propertiesFile")) {
             propertiesFile = cmd.getOptionValue("propertiesFile");
@@ -147,14 +156,10 @@ public abstract class Koupler implements Runnable {
         }
 
         String streamName = "";
-        if (!cmd.hasOption("streamName")) {
-            System.err.println("Must specify stream name.");
-            misconfigured = true;
-        } else {
+        if (cmd.hasOption("streamName")) {
             streamName = cmd.getOptionValue("streamName");
         }
 
-        int queueSize = 50000;
         if (cmd.hasOption("queueSize")) {
             queueSize = Integer.parseInt(cmd.getOptionValue("queueSize"));
         }
@@ -166,12 +171,10 @@ public abstract class Koupler implements Runnable {
             System.exit(-1);
         }
 
-        String appName = "koupler";
         if (cmd.hasOption("appName")) {
             appName = cmd.getOptionValue("appName");
         }
 
-        String format = "split";
         if (cmd.hasOption("format")) {
             format = cmd.getOptionValue("format");
         }
@@ -188,7 +191,7 @@ public abstract class Koupler implements Runnable {
         } else if (cmd.hasOption("udp")) {
             koupler = new UdpKoupler(producer, port);
         } else if (cmd.hasOption("http")) {
-            koupler = new HttpKoupler(producer, port);
+            koupler = new HttpKoupler(port);
         } else if (cmd.hasOption("pipe")) {
             koupler = new PipeKoupler(producer);
         } else if (cmd.hasOption("consumer")) {
@@ -199,8 +202,10 @@ public abstract class Koupler implements Runnable {
         }
 
         if (server) {
-            Thread producerThread = new Thread(producer);
-            producerThread.start();
+            if (!streamName.equals("")) {
+                Thread producerThread = new Thread(producer);
+                producerThread.start();
+            }
 
             Thread kouplerThread = new Thread(koupler);
             kouplerThread.start();
