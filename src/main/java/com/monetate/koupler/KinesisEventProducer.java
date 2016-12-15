@@ -120,7 +120,8 @@ public class KinesisEventProducer implements Runnable {
     }
 
     public void send(String event) throws UnsupportedEncodingException {
-        byte[] bytes = event.getBytes("UTF-8");
+        String message = getData(event);
+        byte[] bytes = message.getBytes("UTF-8");
         this.metrics.queueEvent(bytes.length);
         ByteBuffer data = ByteBuffer.wrap(bytes);
         String partitionKey = getPartitionKey(event);

@@ -29,6 +29,8 @@ public class SplitFormat implements Format {
 
     @Override
     public String getData(String event) {
-        return event;
+        // This is kind of an assumption for our use case, and could be more
+        // flexible.
+        return event.split(this.delimiter, 2)[1];
     }
 }
