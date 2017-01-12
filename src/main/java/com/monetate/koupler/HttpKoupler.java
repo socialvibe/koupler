@@ -17,6 +17,7 @@ public class HttpKoupler extends Koupler implements Runnable {
         KinesisEventProducer producer = producers.get(streamName);
         if (producer == null) {
             producer = new KinesisEventProducer(format, cmd, propertiesFile, streamName, queueSize, appName);
+            producers.put(streamName, producer);
             new Thread(producer).start();
         }
         return producer;
