@@ -11,11 +11,20 @@ Koupler also tracks metrics using [Coda Hale's most excellent metrics library](h
 are then published up to Amazon's cloudwatch, allowing you to see per host behavior and throughput information.  For more information, 
 see the metrics section below.
 
+For true[X]'s purposes, we only use the HTTP interface, which provides some
+additional functionality. This interface will dynamically create producers based
+on the route used to hit Koupler. The `/:stream` endpoint will direct the record
+to a kinesis stream matching the name provided.
+
+Additionally, the HTTP interface will remove partition keys from records before
+sending them to Kinesis. In other words, we expect records sent to Koupler to
+look like "<partition key>, <record>" coming in, and "<record>" going out.
+
 Building
 --------
 Koupler uses [gradle](http://gradle.org/) as its build system.  To build kouple with gradle, run the following:
 ```bash
-   gradle clean dist
+   ./build.sh
 ```
 
 This will build a zip-file artifact in build/distributions.
@@ -122,13 +131,13 @@ Next, fire up the HTTP server! The server takes a POST, and queues the body of t
  The following is an example command-line.
 
 ```bash
-   $ ./koupler.sh -http -streamName boneill-dev-test
+   $ ./koupler.sh -http
 ```
 
 You can sling data at the HTTP listener with the following:
 
 ```bash
-   $ curl -d "drago" http://localhost:4567/event
+   $ curl -d "drago" http://localhost:4567/<stream name>
    ACK
 ```
 
