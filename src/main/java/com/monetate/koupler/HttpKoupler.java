@@ -1,38 +1,47 @@
 package com.monetate.koupler;
 
-import static spark.Spark.post;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.KinesisProducerConfiguration;
+import com.amazonaws.services.kinesis.producer.UserRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpKoupler extends Koupler implements Runnable {
+import java.nio.ByteBuffer;
+
+import static spark.Spark.post;
+
+public class HttpKoupler implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpKoupler.class);
 
-    private Map<String, KinesisEventProducer> producers = new HashMap();
+    KinesisProducer producer;
 
-    private KinesisEventProducer getOrCreateProducer(String streamName) {
-        KinesisEventProducer producer = producers.get(streamName);
-        if (producer == null) {
-            producer = new KinesisEventProducer(format, cmd, propertiesFile, streamName, queueSize, appName);
-            producers.put(streamName, producer);
-            new Thread(producer).start();
-        }
-        return producer;
+    public HttpKoupler(int port, KinesisProducer producer) {
+        this.producer = producer;
+        LOGGER.info("Firing up HTTP listener on [{}]", port);
     }
 
-    public HttpKoupler(int port) {
-        super(20);
+    public HttpKoupler(int port, String propertiesFile) {
+        KinesisProducerConfiguration config = KinesisProducerConfiguration.fromPropertiesFile(propertiesFile);
+        this.producer = new KinesisProducer(config);
         LOGGER.info("Firing up HTTP listener on [{}]", port);
     }
     
     @Override
     public void run() {
         post("/:stream", (request, response) -> {
-            String event = request.body();
-            getOrCreateProducer(request.params(":stream")).queueEvent(event);
+            String streamName = request.params(":stream");
+            String msg = request.body();
+            String partitionKey = msg.split(",", 2)[0];
+            String data = msg.split(",", 2)[1];
+
+            byte[] bytes = data.getBytes("UTF-8");
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+
+            UserRecord record = new UserRecord(streamName, partitionKey, buffer.asReadOnlyBuffer());
+
+            LOGGER.info("request body: " + data);
+            LOGGER.info("request partition key: " + partitionKey);
+            producer.addUserRecord(record);
             return "ACK\n";
         });
     }
