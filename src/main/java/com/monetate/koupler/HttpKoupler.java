@@ -39,8 +39,8 @@ public class HttpKoupler implements Runnable {
 
             UserRecord record = new UserRecord(streamName, partitionKey, buffer.asReadOnlyBuffer());
 
-            LOGGER.info("request body: " + data);
-            LOGGER.info("request partition key: " + partitionKey);
+            LOGGER.debug("request body: " + data);
+            LOGGER.debug("request partition key: " + partitionKey);
             producer.addUserRecord(record);
             return "ACK\n";
         });
