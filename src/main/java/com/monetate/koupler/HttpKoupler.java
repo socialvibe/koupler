@@ -15,6 +15,8 @@ public class HttpKoupler implements Runnable {
 
     KinesisProducer producer;
 
+    String delimiter = ",";
+
     public HttpKoupler(int port, KinesisProducer producer) {
         this.producer = producer;
         LOGGER.info("Firing up HTTP listener on [{}]", port);
@@ -31,8 +33,8 @@ public class HttpKoupler implements Runnable {
         post("/:stream", (request, response) -> {
             String streamName = request.params(":stream");
             String msg = request.body();
-            String partitionKey = msg.split(",", 2)[0];
-            String data = msg.split(",", 2)[1];
+            String partitionKey = msg.split(this.delimiter, 2)[0];
+            String data = msg.split(this.delimiter, 2)[1];
 
             byte[] bytes = data.getBytes("UTF-8");
             ByteBuffer buffer = ByteBuffer.wrap(bytes);

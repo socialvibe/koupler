@@ -12,6 +12,9 @@ public class Koupler {
     public static void main(String[] args) throws ParseException {
         Options options = new Options();
 
+        // No longer needed, but kept here because the Dockerfile used to start
+        // Koupler still specifies this option, so if we don't register it here,
+        // it'll throw an exception.
         options.addOption("http", false, "http mode");
 
         String propertiesFile = "./conf/kpl.properties";
