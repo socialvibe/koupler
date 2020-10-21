@@ -1,7 +1,7 @@
 Koupler
 =====================================
 
-This project provides TCP, HTTP, UDP and Pipe interaces for Amazon's Kinesis.  Underneath the covers, it uses
+The original project provides TCP, HTTP, UDP and Pipe interfaces for Amazon's Kinesis.  Underneath the covers, it uses
 the [Kinesis Producer Library (KPL)](https://github.com/awslabs/amazon-kinesis-producer).  The daemon 
 listens on TCP/UDP/HTTP, or takes input from a pipe.  Regardless of the mode, it handles the stream line-by-line, 
 splitting the line based on the delimiter supplied, and then uses the specified field as the Kinesis partition key
@@ -11,14 +11,27 @@ Koupler also tracks metrics using [Coda Hale's most excellent metrics library](h
 are then published up to Amazon's cloudwatch, allowing you to see per host behavior and throughput information.  For more information, 
 see the metrics section below.
 
-For true[X]'s purposes, we only use the HTTP interface, which provides some
-additional functionality. This interface will dynamically create producers based
-on the route used to hit Koupler. The `/:stream` endpoint will direct the record
-to a kinesis stream matching the name provided.
+For true[X]'s purposes, we only use the HTTP interface, and made a few changes:
 
-Additionally, the HTTP interface will remove partition keys from records before
-sending them to Kinesis. In other words, we expect records sent to Koupler to
-look like "<partition key>, <record>" coming in, and "<record>" going out.
+1. Provides some additional functionality. This interface will dynamically create producers basedon the route used to
+ hit Koupler. The `/:stream` endpoint will direct the record to a kinesis stream matching the name provided.
+
+2. The HTTP interface will remove partition keys from records before sending them to Kinesis. In other words, we expect
+ records sent to Koupler to look like `{partition key},{record}` coming in, and `{record}` going out.
+ 
+3. Removed Koupler's buffer and queueing logic, simplified its threading model, and removed support for all interfaces
+ other than HTTP.
+
+
+Releasing
+---------
+We use git-flow as our branching model. Our release process is very much manual:
+
+- For QA, merge your PR to `develop`, and ask DevOps to create an ECR (Amazon Container Services) image off of 
+  `develop` branch, and tag it with `qa`.
+
+- For production, create a release with `git flow release star`, and then ask DevOps to create an ECR image off of
+  `master` branch, and tag it with `production`.
 
 Building
 --------
