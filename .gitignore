@@ -7,3 +7,6 @@
 .project
 .classpath
 .DS_Store
+gradlew
+gradlew.bat
+gradle/
