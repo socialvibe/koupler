@@ -26,6 +26,7 @@ release {
 
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 configurations {
@@ -58,7 +59,7 @@ dependencies {
     compile group: 'org.eclipse.jetty', name: 'jetty-io', version:'9.0.2.v20130417'
     compile group: 'org.eclipse.jetty', name: 'jetty-http', version:'9.0.2.v20130417'
     compile group: 'com.jayway.jsonpath', name: 'json-path', version:'2.2.0'
-    compile group: 'javax.xml.bind', name: 'jaxb-api', version:'2.3.0'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.+'
 }
 
 task copyRuntimeLibs(dependsOn: 'build', type: Copy) {

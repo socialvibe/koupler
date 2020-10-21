@@ -1,5 +1,7 @@
 package com.monetate.koupler;
 
+import com.amazonaws.services.kinesis.producer.KinesisProducer;
+import com.amazonaws.services.kinesis.producer.UserRecord;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -12,13 +14,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
 public class HttpKouplerTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpKouplerTest.class);
 
     @Test
     public void testRest() throws Exception {
-        MockKinesisProducer producer = new MockKinesisProducer();
+
+        KinesisProducer producer = mock(KinesisProducer.class);
+        when(producer.addUserRecord(any(UserRecord.class))).thenReturn(null);
+
+
         Thread server = new Thread(new HttpKoupler(4567, producer));
         server.start();
         Thread.sleep(1000);
@@ -33,6 +40,6 @@ public class HttpKouplerTest {
         String responseBody = EntityUtils.toString(response.getEntity());
         LOGGER.info("Received [{}] as response from HTTP server.", responseBody);
         assertEquals("Request should succeed", 200, response.getStatusLine().getStatusCode());
-        assertEquals("one event received", 1, producer.getCOUNT());
+        assertEquals("Response body should be ACK", "ACK\n", responseBody);
     }
 }
