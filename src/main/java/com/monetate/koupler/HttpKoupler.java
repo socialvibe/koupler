@@ -27,23 +27,68 @@ public class HttpKoupler implements Runnable {
         this.producer = new KinesisProducer(config);
         LOGGER.info("Firing up HTTP listener on [{}]", port);
     }
+
+    /** Returns partition key from an event
+     *
+     * Our convention is that the event string should not be null and should
+     * contain the delimiter. If it's not the case, we always return null.
+     *
+     * TODO: we can probably remove the try catch block.
+     */
+    public String getPartitionKey(String event) {
+        try {
+            if (event.contains(delimiter)) {
+                return event.split(this.delimiter, 2)[0];
+            } else {
+                LOGGER.warn("Received event from which we could NOT extract partition key.");
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Received event from which we could NOT extract partition key.", e);
+            return null;
+        }
+    }
+
+    /** Returns data from an event
+     *
+     * Our convention is that the event string should not be null and should
+     * contain the delimiter. If it's not the case, we always return null.
+     *
+     * TODO: we can probably remove the try catch block.
+     */
+    public String getData(String event) {
+        try {
+            if (event.contains(delimiter)) {
+                return event.split(this.delimiter, 2)[1];
+            } else {
+                LOGGER.warn("Received event from which we could NOT extract data.");
+                return null;
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Received event from which we could NOT extract data.", e);
+            return null;
+        }
+    }
     
     @Override
     public void run() {
         post("/:stream", (request, response) -> {
             String streamName = request.params(":stream");
-            String msg = request.body();
-            String partitionKey = msg.split(this.delimiter, 2)[0];
-            String data = msg.split(this.delimiter, 2)[1];
+            String event = request.body();
+            String partitionKey = getPartitionKey(event);
+            String data = getData(event);
 
-            byte[] bytes = data.getBytes("UTF-8");
-            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            if (partitionKey != null) {
+                byte[] bytes = data.getBytes("UTF-8");
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
 
-            UserRecord record = new UserRecord(streamName, partitionKey, buffer.asReadOnlyBuffer());
+                UserRecord record = new UserRecord(streamName, partitionKey, buffer.asReadOnlyBuffer());
 
-            LOGGER.debug("request body: " + data);
-            LOGGER.debug("request partition key: " + partitionKey);
-            producer.addUserRecord(record);
+                LOGGER.debug("request body: " + data);
+                LOGGER.debug("request partition key: " + partitionKey);
+                producer.addUserRecord(record);
+            }
+
             return "ACK\n";
         });
     }

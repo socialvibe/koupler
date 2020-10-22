@@ -21,10 +21,8 @@ public class HttpKouplerTest {
 
     @Test
     public void testRest() throws Exception {
-
         KinesisProducer producer = mock(KinesisProducer.class);
         when(producer.addUserRecord(any(UserRecord.class))).thenReturn(null);
-
 
         Thread server = new Thread(new HttpKoupler(4567, producer));
         server.start();
@@ -35,6 +33,27 @@ public class HttpKouplerTest {
         builder.setScheme("http").setHost("localhost").setPort(4567).setPath("/test_stream");
         HttpPost post = new HttpPost(builder.toString());
         post.setEntity(new ByteArrayEntity("key,data".getBytes()));
+
+        CloseableHttpResponse response = client.execute(post);
+        String responseBody = EntityUtils.toString(response.getEntity());
+        LOGGER.info("Received [{}] as response from HTTP server.", responseBody);
+        assertEquals("Request should succeed", 200, response.getStatusLine().getStatusCode());
+        assertEquals("Response body should be ACK", "ACK\n", responseBody);
+    }
+
+    @Test
+    public void testEmptyRequestBody() throws Exception {
+        KinesisProducer producer = mock(KinesisProducer.class);
+        when(producer.addUserRecord(any(UserRecord.class))).thenReturn(null);
+
+        Thread server = new Thread(new HttpKoupler(4567, producer));
+        server.start();
+        Thread.sleep(1000);
+
+        URIBuilder builder = new URIBuilder();
+        CloseableHttpClient client = HttpClients.createDefault();
+        builder.setScheme("http").setHost("localhost").setPort(4567).setPath("/test_stream");
+        HttpPost post = new HttpPost(builder.toString());
 
         CloseableHttpResponse response = client.execute(post);
         String responseBody = EntityUtils.toString(response.getEntity());
